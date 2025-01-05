@@ -6,7 +6,10 @@
 #include <functional>
 
 namespace Vulkan {
+
+class Instance;
 using ResizeCallback = std::function<void(int width, int height)>;
+
 struct Window {
 
     Window();
@@ -17,9 +20,12 @@ struct Window {
     Window& operator=(Window&& other) noexcept;
     ~Window();
 
-    void destroy();
+    void destroy(const Instance& instance);
+    void init(const Instance& instance);
     void setResizeCallback(ResizeCallback callback);
+    void getWindowFramebufferSize(int& width, int& height);
     int closeCheck();
+    void initSurface(const Instance& instance);
 
     static void windowResizeCallback(GLFWwindow* window, int width, int height) {
         Window* active_window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
@@ -37,5 +43,6 @@ struct Window {
     size_t height{0};
     bool window_resized{false};
     ResizeCallback resize_callback;
+    VkSurfaceKHR surface;
 };
 }

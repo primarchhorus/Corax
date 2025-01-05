@@ -11,14 +11,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find required packages
-
-
 # Add executable
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/window.cpp
     src/device.cpp
+    src/instance.cpp
+    src/swap_chain.cpp
 )
 
 # Include directories
@@ -32,3 +31,47 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Vulkan::Vulkan
     glfw
 )
+
+function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
+    # Find glslangValidator
+    find_program(GLSLANG_VALIDATOR glslangValidator
+        HINTS $ENV{VULKAN_SDK}/bin)
+
+    if(NOT GLSLANG_VALIDATOR)
+        message(FATAL_ERROR "glslangValidator not found!")
+    endif()
+
+    # Get all shader files
+    file(GLOB SHADER_SOURCES
+        ${SHADER_SOURCE_DIR}/*.vert
+        ${SHADER_SOURCE_DIR}/*.frag
+        ${SHADER_SOURCE_DIR}/*.comp
+    )
+
+    # Create output directory
+    file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
+
+    # Compile each shader
+    foreach(SHADER ${SHADER_SOURCES})
+        get_filename_component(SHADER_NAME ${SHADER} NAME)
+        set(SPIRV_OUTPUT "${SHADER_BINARY_DIR}/${SHADER_NAME}.spv")
+
+        # Add custom command to compile the shader
+        add_custom_command(
+            OUTPUT ${SPIRV_OUTPUT}
+            COMMAND ${GLSLANG_VALIDATOR} -V ${SHADER} -o ${SPIRV_OUTPUT}
+            DEPENDS ${SHADER}
+            COMMENT "Compiling shader ${SHADER_NAME}"
+        )
+
+        list(APPEND SPIRV_BINARY_FILES ${SPIRV_OUTPUT})
+    endforeach()
+
+    # Create a custom target that depends on all compiled shaders
+    add_custom_target(shaders ALL DEPENDS ${SPIRV_BINARY_FILES})
+endfunction()
+
+# Example usage in your CMakeLists.txt:
+set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders")
+set(SHADER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+compile_shaders(${SHADER_SOURCE_DIR} ${SHADER_BINARY_DIR})

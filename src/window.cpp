@@ -1,4 +1,6 @@
 #include "window.h"
+#include "instance.h"
+#include "vulkan_utils.h"
 
 namespace Vulkan {
 Window::Window() {}
@@ -30,8 +32,8 @@ Window::Window(Window&& other) noexcept
 }
 
 Window& Window::operator=(Window&& other) noexcept {
-    if (this != &other) {
-        destroy();
+    if (this != &other)
+    {
         handle = other.handle;
         width = other.width;
         height = other.height;
@@ -42,16 +44,23 @@ Window& Window::operator=(Window&& other) noexcept {
 
 Window::~Window()
 {
-    destroy();
+
 }
 
-void Window::destroy() {
+void Window::destroy(const Instance& instance)
+{
+    vkDestroySurfaceKHR(instance.handle, surface, nullptr);
     if (handle) {
         glfwDestroyWindow(handle);
         if (!glfwGetCurrentContext()) {
             glfwTerminate();
         }
     }
+}
+
+void Window::init(const Instance& instance)
+{
+    initSurface(instance);
 }
 
 void Window::setResizeCallback(ResizeCallback callback) {
@@ -62,4 +71,15 @@ int Window::closeCheck()
 {
     return glfwWindowShouldClose(handle);
 }
+
+void Window::getWindowFramebufferSize(int& width, int& height)
+{
+    glfwGetFramebufferSize(handle, &width, &height);
+}
+
+void Window::initSurface(const Instance& instance)
+{
+    vkCheck(glfwCreateWindowSurface(instance.handle, handle, nullptr, &surface));
+}
+
 }
