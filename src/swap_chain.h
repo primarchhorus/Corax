@@ -9,28 +9,30 @@ class Window;
 class Device;
 
 struct SwapChain {
-  SwapChain();
+  SwapChain(Device& device, Window& window, const Instance& instance);
   ~SwapChain();
   SwapChain(const SwapChain &) = delete;
   SwapChain &operator=(const SwapChain &) = delete;
   SwapChain(SwapChain &&other) noexcept;
   SwapChain &operator=(SwapChain &&other) noexcept;
 
-  void init(Device& device, Window& window);
-  void initSurface(const Window& window);
-  void destroy(const Device& device);
+  void init(Window& window, const Instance& instance);
+  void destroy();
 
-  VkSurfaceFormatKHR chooseSwapSurfaceFormat(const Device& device);
-  VkPresentModeKHR chooseSwapPresentMode(const Device& device);
-  VkExtent2D chooseSwapExtent(const Device& device, Window& window);
-  void createSwapChain(Device& device, Window& window);
-  void createImageViews(const Device& device);
+  VkSurfaceFormatKHR chooseSwapSurfaceFormat();
+  VkPresentModeKHR chooseSwapPresentMode();
+  VkExtent2D chooseSwapExtent(Window& window);
+  void createSwapChain(Window& window, const Instance& instance);
+  void createImageViews();
+  void createFrameBuffers();
 
   VkSwapchainKHR swap_chain;
   std::vector<VkImage> images;
   std::vector<VkImageView> image_views;
+  std::vector<VkFramebuffer> frame_buffers;
   VkFormat image_format;
   VkExtent2D extent;
+  Device& device_ref;
 
 };
 } // namespace Vulkan

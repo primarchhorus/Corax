@@ -1,5 +1,6 @@
 #include "instance.h"
 #include "vulkan_utils.h"
+#include "window.h"
 
 #include <cstddef>
 #include <memory>
@@ -17,18 +18,28 @@ namespace Vulkan {
         return VK_FALSE;
     }
 
-    Instance::Instance()
+    Instance::Instance(const Window& window)
     {
-
+        init();
+        initSurface(window);
     }
 
     Instance::~Instance()
     {
+        try
+        {
+            destroy();
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
 
     Instance::Instance(Instance&& other) noexcept
-        : handle(other.handle) {
-        other.handle = nullptr;
+        : handle(other.handle), debug_messenger(other.debug_messenger) {
+        other.handle = VK_NULL_HANDLE;
+        other.debug_messenger = VK_NULL_HANDLE;
     }
 
     Instance& Instance::operator=(Instance&& other) noexcept {
@@ -57,7 +68,7 @@ namespace Vulkan {
                     break;
                 }
                 else {
-                    found = found & false;
+                    found = found | false;
                 }
             }
         }
@@ -150,17 +161,24 @@ namespace Vulkan {
         if (func != nullptr) {
           func(handle, &messenger_info, nullptr, &debug_messenger);
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     void Instance::destroy()
     {
-      auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-          handle, "vkDestroyDebugUtilsMessengerEXT");
-      if (func != nullptr) {
-        func(handle, debug_messenger, nullptr);
-      }
+        vkDestroySurfaceKHR(handle, surface, nullptr);
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+            handle, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(handle, debug_messenger, nullptr);
+        }
         vkDestroyInstance(handle, nullptr);
         std::cout << "Destroyed vulkan instance" << std::endl;
+    }
+
+    void Instance::initSurface(const Window& window)
+    {
+        vkCheck(glfwCreateWindowSurface(handle, window.handle, nullptr, &surface));
     }
 
 }

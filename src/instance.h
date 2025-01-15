@@ -3,9 +3,9 @@
 #include "vulkan_common.h"
 
 namespace Vulkan {
-
+struct Window;
 struct Instance {
-  Instance();
+  Instance(const Window& window);
   ~Instance();
   Instance(const Instance &) = delete;
   Instance &operator=(const Instance &) = delete;
@@ -14,11 +14,13 @@ struct Instance {
 
   void init();
   void destroy();
+  void initSurface(const Window& window);
 
   const std::vector<const char *> validation_layers = {
-      "VK_LAYER_KHRONOS_validation", "VK_KHR_portability_subset"};
+      "VK_LAYER_KHRONOS_validation"};
   const bool enable_validation{true};
   VkInstance handle;
   VkDebugUtilsMessengerEXT debug_messenger;
+  VkSurfaceKHR surface;
 };
 } // namespace Vulkan

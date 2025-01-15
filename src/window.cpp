@@ -24,6 +24,7 @@ height(window_height)
     // Set up resize callback
     glfwSetWindowUserPointer(handle, this);
     glfwSetFramebufferSizeCallback(handle, windowResizeCallback);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 Window::Window(Window&& other) noexcept
@@ -47,20 +48,14 @@ Window::~Window()
 
 }
 
-void Window::destroy(const Instance& instance)
+void Window::destroy()
 {
-    vkDestroySurfaceKHR(instance.handle, surface, nullptr);
     if (handle) {
         glfwDestroyWindow(handle);
         if (!glfwGetCurrentContext()) {
             glfwTerminate();
         }
     }
-}
-
-void Window::init(const Instance& instance)
-{
-    initSurface(instance);
 }
 
 void Window::setResizeCallback(ResizeCallback callback) {
@@ -75,11 +70,6 @@ int Window::closeCheck()
 void Window::getWindowFramebufferSize(int& width, int& height)
 {
     glfwGetFramebufferSize(handle, &width, &height);
-}
-
-void Window::initSurface(const Instance& instance)
-{
-    vkCheck(glfwCreateWindowSurface(instance.handle, handle, nullptr, &surface));
 }
 
 }

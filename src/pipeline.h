@@ -1,71 +1,95 @@
 #pragma once
 
+#ifdef _WIN32
+    #undef APIENTRY //Some total nonsense, already defined in glfw header
+#endif
+
 #include "vulkan_common.h"
 #include "vulkan_utils.h"
 #include "device.h"
+#include "swap_chain.h"
 
 #include <filesystem>
 #include <vector>
 #include <string>
-#include <sys/mman.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <vulkan/vulkan_core.h>
+#include <functional>
+#include <tuple>
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <fcntl.h>
+    #include <sys/mman.h>
+    #include <unistd.h>
+#endif
+
+
 
 namespace Vulkan {
 
-    class SwapChain;
-
+        /*
+        Need to sort out a ref to the device for the shader modules
+        */
     struct ShaderModule {
         VkShaderModule module;
         VkShaderStageFlagBits stage;
         std::vector<uint32_t> spirv_binary;
-        std::string shader_name;
 
-        ShaderModule(const std::string& filename) : shader_name(filename) {}
+        ShaderModule() {
+ 
+        }
 
-        bool load() {
+        ~ShaderModule()
+        {
+        }
+
+        bool load(const std::string& filename) {
             std::error_code error;
-            std::filesystem::path path(shader_name);
+            std::filesystem::path path(filename);
+            std::cout << path << std::endl;
             size_t file_size = std::filesystem::file_size(path, error);
             if (error)
             {
                 return false;
             }
-
-            #ifdef _WIN32
-                // Fill in win nonsense later
+            const uint32_t chunk_size = 4096;
+        #ifdef _WIN32
+            HANDLE file = CreateFile(filename.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (file == INVALID_HANDLE_VALUE) {
                 return false;
-            #else
-                int fd = open(shader_name.c_str(), O_RDONLY);
-                if (fd == -1)
-                {
-                    return false;
-                }
+            }
 
-                void *data =
-                    mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+            std::vector<char> buffer(chunk_size);
+            DWORD bytes_read;
+            while (ReadFile(file, buffer.data(), chunk_size, &bytes_read, nullptr) && bytes_read > 0) {
+                spirv_binary.insert(spirv_binary.end(),
+                    reinterpret_cast<const uint32_t*>(buffer.data()),
+                    reinterpret_cast<const uint32_t*>(buffer.data() + bytes_read));
+            }
 
-                if (data == MAP_FAILED)
-                {
-                    close(fd);
-                    return false;
-                }
+            CloseHandle(file);
+        #else
+            int fd = open(filename.c_str(), O_RDONLY);
+            if (fd == -1) {
+                return false;
+            }
 
-                spirv_binary.assign(
-                    reinterpret_cast<const uint32_t*>(data),
-                    reinterpret_cast<const uint32_t*>(static_cast<const char*>(data) + file_size)
-                );
+            std::vector<char> buffer(chunk_size);
+            ssize_t bytes_read;
+            while ((bytes_read = read(fd, buffer.data(), chunk_size)) > 0) {
+                spirv_binary.insert(spirv_binary.end(),
+                    reinterpret_cast<const uint32_t*>(buffer.data()),
+                    reinterpret_cast<const uint32_t*>(buffer.data() + bytes_read));
+            }
 
-                munmap(data, file_size);
-                close(fd);
-            #endif
+            close(fd);
+        #endif
 
             return true;
         }
 
-        void create(const Device& device) {
+        void create(Device& device) {
             VkShaderModuleCreateInfo shader_info{};
             shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
             shader_info.codeSize = spirv_binary.size() * sizeof(uint32_t);
@@ -74,36 +98,34 @@ namespace Vulkan {
             vkCheck(vkCreateShaderModule(device.logical_handle, &shader_info, nullptr, &module));
         }
 
-        void destroy(const Device& device) {
+        void destroy(Device& device) {
             vkDestroyShaderModule(device.logical_handle, module, nullptr);
         }
     };
 
     struct PipeLineConfig {
-        std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
-        // VkPipelineInputAssemblyStateCreateInfo input_assembly_info;
-        // VkPipelineViewportStateCreateInfo viewport_info;
-        // VkPipelineRasterizationStateCreateInfo rasterizer_info;
-        // VkPipelineMultisampleStateCreateInfo multisampling_info;
-        // VkPipelineColorBlendAttachmentState color_blend_attachment;
-        // VkPipelineColorBlendStateCreateInfo color_blending_info;
-        // VkPipelineLayout pipeline_layout;
-        // VkRenderPass render_pass;
-        // VkExtent2D extent;
+        // Figure out the size order of these things at somepoint so i can pack the struct
+        VkPipelineShaderStageCreateInfo vertex_stages;
+        VkPipelineShaderStageCreateInfo fragment_stages;
+        std::string name;
+        VkExtent2D extent;
+        VkFormat format;
     };
 
     struct PipeLine {
-        PipeLine();
+        PipeLine(Device& device, const PipeLineConfig& config);
         ~PipeLine();
         PipeLine(const PipeLine&) = delete;
         PipeLine& operator=(const PipeLine&) = delete;
         PipeLine(PipeLine&& other) noexcept;
         PipeLine& operator=(PipeLine&& other) noexcept;
 
-        void create(const PipeLineConfig& config, const Device& device, const SwapChain& swap_chain);
-        void destroy(const Device& device);
-
+        void destroy();
+        void create(const PipeLineConfig& config);
+        
         VkPipeline handle;
         VkPipelineLayout layout_handle;
+        Device& device_ref;
     };
-}
+
+} // namespace Vulkan

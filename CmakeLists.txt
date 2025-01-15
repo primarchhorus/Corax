@@ -1,15 +1,28 @@
 cmake_minimum_required(VERSION 3.20)
 project(VulkanTutorial)
 
-set(CMAKE_OSX_ARCHITECTURES "arm64")
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
-  add_compile_options(-arch arm64)
-endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+        add_compile_options(-arch arm64)
+    endif()
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(CMAKE_OSX_ARCHITECTURES "x64")
+    set(VULKAN_SDK "C:/VulkanSDK/1.3.296.0")
+    set(GLFW_SDK "C:/glfw-3.4.bin.WIN64/glfw-3.4.bin.WIN64")
+    set(CMAKE_C_COMPILER "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe")
+    set(CMAKE_CXX_COMPILER "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
+endif()
+
+
 
 # Add executable
 add_executable(${PROJECT_NAME}
@@ -18,18 +31,25 @@ add_executable(${PROJECT_NAME}
     src/device.cpp
     src/instance.cpp
     src/swap_chain.cpp
+    src/pipeline.cpp
+    src/pipeline_cache.h
+    src/command_pool.cpp
+    src/frame_sync.cpp
+    src/dynamic_rendering.cpp
+    src/pipeline_builder.cpp
 )
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
+    ${VULKAN_SDK}/Include
+    ${GLFW_SDK}/include
+   
 )
 
-find_package(Vulkan REQUIRED)
-find_package(glfw3 REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    Vulkan::Vulkan
-    glfw
+    ${VULKAN_SDK}/Lib/vulkan-1.lib
+    ${GLFW_SDK}/lib-vc2022/glfw3.lib
 )
 
 function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
@@ -71,7 +91,6 @@ function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
     add_custom_target(shaders ALL DEPENDS ${SPIRV_BINARY_FILES})
 endfunction()
 
-# Example usage in your CMakeLists.txt:
 set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders")
 set(SHADER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 compile_shaders(${SHADER_SOURCE_DIR} ${SHADER_BINARY_DIR})
