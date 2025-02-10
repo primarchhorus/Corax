@@ -1,14 +1,14 @@
 #pragma once
 
 #include "vulkan_common.h"
-#include <vulkan/vulkan_core.h>
 
 #include <map>
+#include <span>
+#include <functional>
 
 namespace Vulkan {
 
-class Instance;
-class Window;
+struct Instance;
 
 struct DeviceSuitability {
     std::map<std::string, uint32_t> queue_fam_indexes;
@@ -22,6 +22,8 @@ struct DeviceSuitability {
     VkBool32 queue_fam_draw_suitable{false};
     VkBool32 queue_fam_present_suitable{false};
     uint32_t queue_fam_draw_index{0};
+    VkPhysicalDeviceBufferDeviceAddressFeatures buffer_device_address_features{};
+    VkPhysicalDeviceVulkan12Features vulkan12_features{};
 
     bool result() {
         bool result{true};
@@ -36,14 +38,14 @@ struct DeviceSuitability {
 };
 
 struct Device {
-    Device(const Instance& instance);
+    Device();
     ~Device();
     Device(const Device&) = delete;
     Device& operator=(const Device&) = delete;
     Device(Device&& other) noexcept;
     Device& operator=(Device&& other) noexcept;
 
-    void init(const Instance& instance);
+    void create(const Instance& instance);
     void initLogical(const Instance& instance);
     void destroy();
     void initPhysical(const Instance& instance);
@@ -51,21 +53,21 @@ struct Device {
     void checkDeviceExtensions(const VkPhysicalDevice& device, const Instance& instance);
     void querySwapChainSupport(const VkPhysicalDevice& device, const Instance& instance);
     void initQueues();
+    void immediateSubmit(std::function<void(VkCommandBuffer cmd)>&& function);
+    
 
     VkPhysicalDevice physical_handle{VK_NULL_HANDLE};
     VkDevice logical_handle{VK_NULL_HANDLE};
     DeviceSuitability suitability;
     const std::vector<const char*> required_device_extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME, // Dynamic Rendering Dependency.
-        VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME, // Dynamic Rendering Dependency.
-        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+        VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
+        VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
+        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
     };
 
     VkQueue graphics_queue;
     VkQueue present_queue;
-    //TODO add the othere here over time
-
 
 };
 }

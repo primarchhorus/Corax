@@ -13,9 +13,10 @@ namespace Vulkan {
         CommandPool(CommandPool&& other) noexcept;
         CommandPool& operator=(CommandPool&& other) noexcept;
 
-        void createPool(Device& device);
-        void createBuffer(Device& device, std::vector<VkCommandBuffer>& buffer);
-        void destroy(Device& device);
+        void createPool(const Device& device);
+        void createBuffer(const Device& device, std::vector<VkCommandBuffer>& buffer);
+        void freeBuffers(const Device& device, std::vector<VkCommandBuffer>& buffer, uint32_t buffer_count);
+        void destroy(const Device& device);
 
         VkCommandPool handle;
     };

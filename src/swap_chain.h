@@ -4,37 +4,33 @@
 
 namespace Vulkan {
 
-class Instance;
-class Window;
-class Device;
+    struct Instance;
+    struct Window;
+    struct Device;
 
-struct SwapChain {
-  SwapChain(Device& device, Window& window, const Instance& instance);
-  ~SwapChain();
-  SwapChain(const SwapChain &) = delete;
-  SwapChain &operator=(const SwapChain &) = delete;
-  SwapChain(SwapChain &&other) noexcept;
-  SwapChain &operator=(SwapChain &&other) noexcept;
+    struct SwapChain {
+        SwapChain();
+        ~SwapChain();
+        SwapChain(const SwapChain &) = delete;
+        SwapChain &operator=(const SwapChain &) = delete;
+        SwapChain(SwapChain &&other) noexcept;
+        SwapChain &operator=(SwapChain &&other) noexcept;
 
-  void init(Window& window, const Instance& instance);
-  void destroy();
+        void create(const Device& device, const Window& window, const Instance& instance);
+        void destroy(const Device& device);
 
-  VkSurfaceFormatKHR chooseSwapSurfaceFormat();
-  VkPresentModeKHR chooseSwapPresentMode();
-  VkExtent2D chooseSwapExtent(Window& window);
-  void createSwapChain(Window& window, const Instance& instance);
-  void createImageViews();
-  void createFrameBuffers();
+        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const Device& device);
+        VkPresentModeKHR chooseSwapPresentMode(const Device& device);
+        VkExtent2D chooseSwapExtent(const Device& device, const Window& window);
+        void createSwapChain(const Device& device, const Window& window, const Instance& instance);
+        void createImageViews(const Device& device);
 
-  VkSwapchainKHR swap_chain;
-  std::vector<VkImage> images;
-  std::vector<VkImageView> image_views;
-  std::vector<VkFramebuffer> frame_buffers;
-  VkFormat image_format;
-  VkExtent2D extent;
-  Device& device_ref;
+        VkSwapchainKHR swap_chain{};
+        std::vector<VkImage> images{};
+        std::vector<VkImageView> image_views{};
+        std::vector<VkFramebuffer> frame_buffers{};
+        VkFormat image_format{};
+        VkExtent2D extent{};
 
-};
+    };
 } // namespace Vulkan
-
-// Dont give any references to the constructors, dont rely on the destructors, call explicity destroy on all objects and pass device or instance to the functions that need them

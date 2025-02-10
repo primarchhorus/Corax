@@ -18,10 +18,9 @@ namespace Vulkan {
         return VK_FALSE;
     }
 
-    Instance::Instance(const Window& window)
+    Instance::Instance()
     {
-        init();
-        initSurface(window);
+
     }
 
     Instance::~Instance()
@@ -50,7 +49,7 @@ namespace Vulkan {
         return *this;
     }
 
-    void Instance::init()
+    void Instance::create()
     {
         // Validation layer check, TODO wrap in  a debug thing
         uint32_t layers;
@@ -176,7 +175,7 @@ namespace Vulkan {
         std::cout << "Destroyed vulkan instance" << std::endl;
     }
 
-    void Instance::initSurface(const Window& window)
+    void Instance::createSurface(const Window& window)
     {
         vkCheck(glfwCreateWindowSurface(handle, window.handle, nullptr, &surface));
     }

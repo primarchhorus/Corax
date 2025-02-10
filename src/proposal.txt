@@ -1,0 +1,40 @@
+int main() {
+    Renderer renderer;
+    
+    RendererDesc desc;
+    desc.width = 1920;
+    desc.height = 1080;
+    desc.windowTitle = "Game";
+    renderer.initialize(desc);
+    
+    // Load resources
+    auto& resources = renderer.getResourceManager();
+    auto mesh = resources.loadMesh("models/character.gltf");
+    auto texture = resources.loadTexture("textures/character_diffuse.png");
+    
+    MaterialDesc materialDesc;
+    materialDesc.shader = "shaders/pbr.shader";
+    auto material = resources.createMaterial(materialDesc);
+    
+    // Setup scene
+    auto& scene = renderer.getSceneGraph();
+    auto node = scene.createNode("character");
+    scene.setLocalTransform(node, Transform{{0,0,0}, {0,0,0}, {1,1,1}});
+    
+    Camera camera;
+    camera.setPosition({0, 5, -10});
+    camera.setTarget({0, 0, 0});
+    
+    // Main loop
+    while (!renderer.window.closeCheck()) {
+        renderer.beginFrame();
+        
+        renderer.setCamera(camera);
+        renderer.drawMesh(mesh, material, scene.getWorldTransform(node));
+        
+        renderer.endFrame();
+    }
+    
+    renderer.shutdown();
+    return 0;
+}

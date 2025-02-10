@@ -5,28 +5,6 @@
 namespace Vulkan {
 Window::Window() {}
 
-Window::Window(size_t window_width, size_t window_height, const std::string& window_title) :
-width(window_width),
-height(window_height)
-{
-    if (!glfwInit()) {
-        throw std::runtime_error("Failed to initialize GLFW!");
-    }
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-    handle = glfwCreateWindow(width, height, window_title.c_str(), nullptr, nullptr);
-    if (!handle) {
-        glfwTerminate();
-        throw std::runtime_error("Failed to create GLFW window!");
-    }
-
-    // Set up resize callback
-    glfwSetWindowUserPointer(handle, this);
-    glfwSetFramebufferSizeCallback(handle, windowResizeCallback);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-}
-
 Window::Window(Window&& other) noexcept
     : handle(other.handle), width(other.width), height(other.height) {
     other.handle = nullptr;
@@ -45,7 +23,35 @@ Window& Window::operator=(Window&& other) noexcept {
 
 Window::~Window()
 {
+    try
+    {
+        destroy();
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+}
 
+void Window::create(uint32_t window_width, uint32_t window_height, const std::string& window_title)
+{
+    width = window_width;
+    height = window_height;
+    
+    if (!glfwInit()) {
+        throw std::runtime_error("Failed to initialize GLFW!");
+    }
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    handle = glfwCreateWindow(width, height, window_title.c_str(), nullptr, nullptr);
+    if (!handle) {
+        glfwTerminate();
+        throw std::runtime_error("Failed to create GLFW window!");
+    }
+
+    glfwSetWindowUserPointer(handle, this);
+    glfwSetFramebufferSizeCallback(handle, windowResizeCallback);
 }
 
 void Window::destroy()
@@ -67,7 +73,7 @@ int Window::closeCheck()
     return glfwWindowShouldClose(handle);
 }
 
-void Window::getWindowFramebufferSize(int& width, int& height)
+void Window::getWindowFramebufferSize(int& width, int& height) const
 {
     glfwGetFramebufferSize(handle, &width, &height);
 }
