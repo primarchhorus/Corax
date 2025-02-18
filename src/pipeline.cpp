@@ -38,13 +38,13 @@ namespace Vulkan {
             pipeline->viewport_state.scissorCount = 1;
 
             pipeline->rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-            // pipeline->rasterizer.depthClampEnable = VK_FALSE;
+            pipeline->rasterizer.depthClampEnable = VK_FALSE;
             pipeline->rasterizer.rasterizerDiscardEnable = VK_FALSE;
             pipeline->rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
             pipeline->rasterizer.lineWidth = 1.0;
-            pipeline->rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-            pipeline->rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-            pipeline->rasterizer.depthClampEnable = VK_TRUE;
+            pipeline->rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
+            pipeline->rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+            // pipeline->rasterizer.depthClampEnable = VK_TRUE;
             pipeline->rasterizer.depthBiasEnable = VK_FALSE;
             pipeline->rasterizer.depthBiasConstantFactor = 0.0f;
             pipeline->rasterizer.depthBiasClamp = 0.0f;
@@ -61,7 +61,7 @@ namespace Vulkan {
             pipeline->color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             pipeline->color_blend_attachment.blendEnable = config.enable_blend;
             pipeline->color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-            pipeline->color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            pipeline->color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
             pipeline->color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
             pipeline->color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
             pipeline->color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -103,7 +103,7 @@ namespace Vulkan {
 
             pipeline->depth_stencil_info.depthTestEnable = config.enable_depth;
             pipeline->depth_stencil_info.depthWriteEnable = config.enable_depth;
-            pipeline->depth_stencil_info.depthCompareOp = VK_COMPARE_OP_GREATER;
+            pipeline->depth_stencil_info.depthCompareOp = VK_COMPARE_OP_LESS;
             pipeline->depth_stencil_info.depthBoundsTestEnable = VK_FALSE;
             pipeline->depth_stencil_info.stencilTestEnable = VK_FALSE;
             pipeline->depth_stencil_info.front = {};

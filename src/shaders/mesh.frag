@@ -6,6 +6,7 @@
 layout (location = 0) in vec3 inNormal;
 layout (location = 1) in vec3 inColor;
 layout (location = 2) in vec2 inUV;
+layout (location = 3) in vec3 inPos;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -46,14 +47,112 @@ vec3 calcIrradiance(vec3 nor) {
     );
 }
 
-void main() 
-{
-	float lightValue = max(dot(inNormal, vec3(0.3f,1.f,0.3f)), 0.1f);
+// Fresnel-Schlick approximation for reflectance
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
-	vec3 irradiance = calcIrradiance(inNormal); 
+// Normal Distribution Function (GGX)
+float distributionGGX(vec3 N, vec3 H, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float denom = (NdotH * NdotH * (a2 - 1.0) + 1.0);
+    return a2 / (3.14159265359 * denom * denom);
+}
+
+// Geometric Shadowing Function (Schlick-GGX)
+float geometrySchlickGGX(float NdotV, float roughness) {
+    float k = (roughness * roughness) / 2.0;
+    return NdotV / (NdotV * (1.0 - k) + k);
+}
+
+// Smith function for both view & light
+float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    return geometrySchlickGGX(NdotV, roughness) * geometrySchlickGGX(NdotL, roughness);
+}
+
+// void main() 
+// {
+// 	float lightValue = max(dot(inNormal, sceneData.sunlightDirection.xyz), 0.1f);
+
+// 	vec3 color = inColor * texture(colorTex,inUV).xyz;
+// 	vec3 ambient = color *  sceneData.ambientColor.xyz;
+
+// 	outFragColor = vec4(color * lightValue *  sceneData.sunlightColor.w + ambient ,1.0f);
+// }
 
 
-	vec3 color = inColor * texture(colorTex,inUV).xyz;
+// void main() {
+//     vec3 N = normalize(inNormal); // Normalized normal
+//     vec3 L = normalize(sceneData.sunlightDirection.rgb); // Light direction
+//     vec3 V = normalize(sceneData.cameraPosition.rgb - inPos); // View direction
+//     vec3 R = reflect(-L, N); // Reflected light direction
 
-	outFragColor = vec4(color * lightValue + color * irradiance.x * vec3(0.2f), 1.0f);
+//     // Ambient component
+//     vec3 ambient = materialData.color_factors.rgb * sceneData.ambientColor.rgb *1.5;
+
+//     // Diffuse component
+//     float diff = max(dot(N, L), 0.0);
+//     vec3 diffuse = diff * materialData.metal_rough_factors.rgb * sceneData.sunlightColor.rgb;
+
+//     // Specular component
+//     float spec = pow(max(dot(R, V), 0.0), materialData.specular_factors.a);
+//     vec3 specular = spec * materialData.specular_factors.rgb * sceneData.sunlightColor.rgb;
+
+//     // Combine lighting
+//     vec3 phong = ambient + diffuse + specular;
+
+//     // Sample texture
+//     vec3 texColor = texture(colorTex, inUV).rgb;
+
+//     outFragColor = vec4(phong * texColor, 1.0);
+// }
+
+void main() {
+    // Input vectors
+    vec3 N = normalize(inNormal); // Normal
+    vec3 V = normalize(sceneData.cameraPosition.xyz - inPos); // View direction
+    vec3 L = normalize(sceneData.lightPosition.xyz - inPos); // Light direction
+    vec3 H = normalize(V + L); // Halfway vector
+
+    vec3 mrSample = texture(metalRoughTex, inUV).rgb;
+    float metallic = (materialData.has_metal_rough_texture > 0) ? mrSample.b : materialData.metal_factors;
+    float roughness = (materialData.has_metal_rough_texture > 0) ? mrSample.g : materialData.rough_factors;
+
+    // Compute reflectance
+    vec3 F0 = mix(vec3(0.04), materialData.color_factors.rgb, metallic);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    // Compute BRDF terms
+    // Compute BRDF Terms
+
+  
+
+    float NDF = distributionGGX(N, H, roughness);
+    float G = geometrySmith(N, V, L, roughness);
+    vec3 numerator_brdf = NDF * G * F;
+    float denominator_brdf = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
+    vec3 specular = (numerator_brdf / denominator_brdf) * sceneData.sunlightColor.rgb;
+
+    // Specular term
+    // vec3 numerator = NDF * G * F;
+    // float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
+    // vec3 specular = (numerator / denominator) * sceneData.sunlightColor.rgb;
+
+    // Diffuse term (energy conservation)
+    vec3 kD = (1.0 - F) * (1.0 - metallic);
+    vec3 diffuse = kD * materialData.color_factors.rgb * sceneData.sunlightColor.rgb / 3.14159265359;
+
+    // Combine lighting contributions
+    float NdotL = max(dot(N, L), 0.0);
+    vec3 color = (diffuse + specular) * sceneData.lightPosition.w * NdotL;
+
+    // Apply ambient & AO
+    vec3 ambient = (1.0 - metallic) * materialData.color_factors.rgb * sceneData.ambientColor.rgb * materialData.ao;
+
+    vec3 texColor = texture(colorTex, inUV).rgb;
+    outFragColor = vec4((ambient + color) * texColor, 1.0);
 }

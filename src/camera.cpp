@@ -32,7 +32,7 @@ namespace Vulkan {
                         break;
                     }
 
-                    arg.velocity = arg.velocity * 2.0f;
+                    arg.velocity = arg.velocity * 0.05f;
                     
                 };
             };
@@ -60,7 +60,7 @@ namespace Vulkan {
                 if constexpr (std::is_same_v<T, FirstPerson>) {
                     Type wrap = arg;
                     glm::mat4 camera_rotation = getRotationMatrix(wrap);
-                    arg.position += glm::vec3(camera_rotation * glm::vec4(arg.velocity * delta_time, 0.f));
+                    arg.position += glm::vec3(camera_rotation * glm::vec4(arg.velocity, 0.f));
                 };
             };
             std::visit(visitor, camera);
@@ -94,6 +94,18 @@ namespace Vulkan {
             };
             return std::visit(visitor, camera);
 
+        }
+
+        glm::vec4 getPosition(Type& camera)
+        {
+            auto visitor = [](auto&& arg) -> glm::vec4 {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, FirstPerson>) {
+                    return glm::vec4(arg.position, 1.0f);
+                };
+                return glm::vec4(1.0f);
+            };
+            return std::visit(visitor, camera);
         }
     }
 }

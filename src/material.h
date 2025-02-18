@@ -31,6 +31,7 @@ namespace Vulkan {
 
         struct DrawContext {
             std::vector<RenderObject> opaque_surfaces;
+            std::vector<RenderObject> transparent_surfaces;
         };
 
         struct IRenderable {
@@ -92,7 +93,10 @@ namespace Vulkan {
 
         struct alignas(256) MaterialConstants {
             glm::vec4 color_factors;
-            glm::vec4 metal_rough_factors;
+            float metal_factors;
+            float rough_factors;
+            float ao;
+            uint32_t has_metal_rough_texture{0};
             //Something about padding, the alignas should do it, but perhaps that doesnt work for GPU memory?
             glm::vec4 extra[14];// turns out both are good
         };
@@ -114,6 +118,37 @@ namespace Vulkan {
             DescriptorLayout material_layout{};
             DescriptorWrite writer{};
 
+        };
+
+        struct LoadedGLTF : public IRenderable {
+
+            // storage for all the data on a given glTF file
+            std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
+            std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
+            std::unordered_map<std::string, AllocatedTexture> textures;
+            std::unordered_map<std::string, std::shared_ptr<MaterialInstance>> materials;
+
+            // nodes that dont have a parent, for iterating through the file in tree order
+            std::vector<std::shared_ptr<Node>> top_nodes{};
+
+            std::vector<VkSampler> samplers;
+
+            DescriptorAllocation descriptor_pool{.pool_size_ratios = {
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+            }, .num_pools = 1, .sets_per_pool = 1000};
+
+            AllocatedBuffer material_data_buffer;
+
+            std::function<void()> onDestroy;
+
+            ~LoadedGLTF() { };
+
+            virtual void Draw(const glm::mat4& top_matrix, DrawContext& ctx);
+
+            void setCleanupFunction(std::function<void()> destroy_func) {
+                onDestroy = std::move(destroy_func);
+            }
         };
 
         

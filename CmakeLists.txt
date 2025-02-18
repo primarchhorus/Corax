@@ -4,7 +4,7 @@ project(VulkanTutorial)
 
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
@@ -22,7 +22,10 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
 endif()
 
-
+#if(MSVC)
+#    add_compile_options(/W4 /WX)
+#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE")
+#endif()
 
 # Add executable
 add_executable(${PROJECT_NAME}
@@ -32,24 +35,34 @@ add_executable(${PROJECT_NAME}
     src/instance.cpp
     src/swap_chain.cpp
     src/pipeline.cpp
-    src/pipeline_cache.h
-    src/command_pool.cpp
     src/frame_sync.cpp
     src/dynamic_rendering.cpp
-    src/pipeline_builder.cpp
+    src/vma_guard.cpp
+    src/mesh.cpp
+    src/resource_manager.cpp
+    src/vulkan_operations.cpp
+    src/material.cpp
+    src/camera.cpp
+    src/events.cpp
+    src/corax.cpp
 )
+
+# Add fastgltf
+add_subdirectory(third-party/fastgltf)
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${VULKAN_SDK}/Include
     ${GLFW_SDK}/include
-   
+    ${CMAKE_SOURCE_DIR}/third-party/fastgltf/include
+    ${CMAKE_SOURCE_DIR}/third-party/stb
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${VULKAN_SDK}/Lib/vulkan-1.lib
     ${GLFW_SDK}/lib-vc2022/glfw3.lib
+    fastgltf::fastgltf
 )
 
 function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
@@ -61,6 +74,9 @@ function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
         message(FATAL_ERROR "glslangValidator not found!")
     endif()
 
+    message(STATUS "Shader source dir: ${SHADER_SOURCE_DIR}")
+    message(STATUS "Shader binary dir: ${SHADER_BINARY_DIR}")
+    
     # Get all shader files
     file(GLOB SHADER_SOURCES
         ${SHADER_SOURCE_DIR}/*.vert
@@ -71,17 +87,21 @@ function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
     # Create output directory
     file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
+    message(STATUS "Found shaders: ${SHADER_SOURCES}")
+    # ...existing code...
     # Compile each shader
     foreach(SHADER ${SHADER_SOURCES})
         get_filename_component(SHADER_NAME ${SHADER} NAME)
         set(SPIRV_OUTPUT "${SHADER_BINARY_DIR}/${SHADER_NAME}.spv")
-
+        message(STATUS "File shader: ${SHADER_NAME}")
+        message(STATUS "SPIRV shader: ${SPIRV_OUTPUT}")
+        message("${GLSLANG_VALIDATOR}")
         # Add custom command to compile the shader
         add_custom_command(
             OUTPUT ${SPIRV_OUTPUT}
             COMMAND ${GLSLANG_VALIDATOR} -V ${SHADER} -o ${SPIRV_OUTPUT}
             DEPENDS ${SHADER}
-            COMMENT "Compiling shader ${SHADER_NAME}"
+            message(STATUS "Compiling shader: ${SPIRV_OUTPUT}")
         )
 
         list(APPEND SPIRV_BINARY_FILES ${SPIRV_OUTPUT})
@@ -92,5 +112,5 @@ function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
 endfunction()
 
 set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/shaders")
-set(SHADER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+set(SHADER_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/build/shaders")
 compile_shaders(${SHADER_SOURCE_DIR} ${SHADER_BINARY_DIR})

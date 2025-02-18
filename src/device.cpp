@@ -138,6 +138,24 @@ void Device::initPhysical(const Instance& instance) {
     if (physical_handle == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
+
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(physical_handle, VK_FORMAT_D32_SFLOAT, &formatProperties);
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)) {
+        throw std::runtime_error("VK_FORMAT_D32_SFLOAT is not supported for depth attachments.");
+    }
+
+    VkPhysicalDeviceDepthStencilResolveProperties depthResolveProps{};
+    depthResolveProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+    VkPhysicalDeviceProperties2 deviceProps{};
+    deviceProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    deviceProps.pNext = &depthResolveProps;
+    vkGetPhysicalDeviceProperties2(physical_handle, &deviceProps);
+
+    if (!(depthResolveProps.supportedDepthResolveModes & VK_RESOLVE_MODE_MAX_BIT)) {
+        throw std::runtime_error("Depth resolve mode is not supported.");
+    }
+
 }
 
 void Device::checkDeviceSuitability(const VkPhysicalDevice& device,
@@ -161,6 +179,7 @@ void Device::checkDeviceSuitability(const VkPhysicalDevice& device,
     vkGetPhysicalDeviceQueueFamilyProperties(device, &num_queue_families,
                                              queue_fams.data());
 
+   
     // Query Vulkan 1.2 features
     // suitability.vulkan12_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
     // suitability.vulkan12_features.pNext = nullptr;

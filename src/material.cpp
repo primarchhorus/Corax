@@ -84,7 +84,7 @@ namespace Vulkan {
             gltf_material.transparent_pipeline_config.descriptor_set_layout = layouts;
             gltf_material.transparent_pipeline_config.num_descriptor_sets = 2;
             gltf_material.transparent_pipeline_config.enable_blend = VK_TRUE;
-            gltf_material.transparent_pipeline_config.enable_depth = VK_FALSE;
+            gltf_material.transparent_pipeline_config.enable_depth = VK_TRUE;
 
             auto transparent_pipeline = Pipeline::createPipelineObject(
                 device, gltf_material.transparent_pipeline_config);
@@ -157,12 +157,26 @@ namespace Vulkan {
 
                 def.transform = nodeMatrix;
                 def.vertex_buffer_address = mesh->mesh_buffers.vertex_buffer_address;
-                
-                ctx.opaque_surfaces.push_back(def);
+                if (def.material->pass_type == MaterialPass::MAINCOLOUR)
+                {
+                    ctx.opaque_surfaces.push_back(def);
+                }
+                else {
+                    ctx.transparent_surfaces.push_back(def);
+                }
             }
 
             // recurse down
             Node::Draw(topMatrix, ctx);
+        }
+
+
+        void LoadedGLTF::Draw(const glm::mat4& top_matrix, DrawContext& ctx)
+        {
+            // create renderables from the scenenodes
+            for (auto& n : top_nodes) {
+                n->Draw(top_matrix, ctx);
+            }
         }
     }  // namespace Material
 }  // namespace Vulkan

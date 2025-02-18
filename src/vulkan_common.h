@@ -90,6 +90,8 @@ namespace Vulkan
         glm::vec4 ambient_color;
         glm::vec4 sunlight_direction; // w for sun power
         glm::vec4 sunlight_color;
+        glm::vec4 camera_position; 
+        glm::vec4 light_position;
     };
 
     struct DeletionQueue

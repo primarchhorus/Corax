@@ -24,5 +24,6 @@ namespace Vulkan {
         void updatePosition(Type& camera, float delta_time);
         glm::mat4 getViewMatrix(Type& camera);
         glm::mat4 getRotationMatrix(Type& camera);
+        glm::vec4 getPosition(Type& camera);
     }
 }

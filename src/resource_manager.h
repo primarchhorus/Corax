@@ -2,8 +2,15 @@
 
 #include "vulkan_common.h"
 
+
 #include <unordered_map>
 #include <optional>
+
+namespace fastgltf {
+    enum class Filter : std::uint16_t;
+    class Asset;
+    class Image;
+}
 
 namespace Vulkan 
 {
@@ -21,34 +28,24 @@ namespace Vulkan
     struct Device;
     namespace MaterialOperation {
         struct MeshAsset;
+        struct LoadedGLTF;
+        struct MaterialResources;
+        struct GLTFOperations;
+    }
+
+    namespace Pipeline {
+        struct Cache;
     }
     
 
-    // struct ResourceManager {
-    //     ResourceManager();
-    //     ~ResourceManager();
-
-    //     // Mesh Management
-    //     bool loadAsset(Device& device, const std::string& filepath, VmaAllocator allocator_handle, VkCommandPool pool_handle);
-    //     void unloadMesh(MeshHandle handle);
-    //     std::optional<Mesh> getMesh(MeshHandle handle);
-
-    //     void destroy(VmaAllocator allocator_handle);
-        
-    //     // // Texture Management  
-    //     // TextureHandle loadTexture(const std::string& filepath);
-    //     // void unloadTexture(TextureHandle handle);
-
-    //     // // Material Management
-    //     // MaterialHandle createMaterial(const MaterialDesc& desc);
-    //     // void destroyMaterial(MaterialHandle handle);
-
-    //     std::unordered_map<MeshHandle, Mesh> meshes;
-    //     // std::unordered_map<TextureHandle, std::unique_ptr<Texture>> textures;
-    //     // std::unordered_map<MaterialHandle, std::unique_ptr<Material>> materials;
-    // };
 
     namespace ResourceManagement {
         std::vector<std::shared_ptr<MaterialOperation::MeshAsset>> loadAssets(Device& device, const std::string& filepath, VmaAllocator allocator_handle, VkCommandPool pool_handle);
+        std::optional<std::shared_ptr<MaterialOperation::LoadedGLTF>> loadGLTF(
+            Device& device, const std::string& filepath, VmaAllocator& allocator_handle, VkCommandPool& pool_handle,
+            AllocatedTexture& default_texture, MaterialOperation::MaterialResources& default_resources, MaterialOperation::GLTFOperations& material_operations, Pipeline::Cache& pipeline_cache);
+            std::optional<AllocatedTexture> loadImage(Device& device, VmaAllocator& allocator_handle, VkCommandPool& pool_handle, fastgltf::Asset& asset, fastgltf::Image& image);
+        VkFilter extractFilter(fastgltf::Filter filter);
+        VkSamplerMipmapMode extractMipmapMode(fastgltf::Filter filter);
     }
 }

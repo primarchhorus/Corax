@@ -79,7 +79,8 @@ namespace Vulkan
         Pipeline::Shader mesh_fragment{};
         
         bool swap_chain_resized{false};
-        VkRenderingAttachmentInfoKHR color_attachment_info{};
+        VkRenderingAttachmentInfo color_attachment_info{};
+        VkRenderingAttachmentInfo depthAttachment{};
         VkImageMemoryBarrier image_memory_barrier{};
         VkImageMemoryBarrier depth_barrier{};
         VkRect2D area{};
@@ -118,6 +119,7 @@ namespace Vulkan
 
         MaterialOperation::DrawContext main_draw_context;
         std::unordered_map<std::string, std::shared_ptr<MaterialOperation::Node>> loaded_nodes;
+        std::unordered_map<std::string, std::shared_ptr<MaterialOperation::LoadedGLTF>> loaded_scenes;
 
         Camera::Type fps_camera;
     };
