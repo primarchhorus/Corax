@@ -31,12 +31,14 @@ namespace Vulkan
         VkDeviceAddress vertex_buffer_address;
     };
 
-    struct Vertex {
+    struct alignas(16) Vertex {
 
         glm::vec3 position;
         float uv_x;
         glm::vec3 normal;
         float uv_y;
+        glm::vec3 tangent;
+        float padding;
         glm::vec4 color;
     };
 
@@ -121,5 +123,6 @@ namespace Vulkan
         VmaAllocation allocation;
         VkExtent3D extent;
         VkFormat format;
+        VkSampler sampler;
     };
 };

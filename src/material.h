@@ -106,6 +106,14 @@ namespace Vulkan {
             VkSampler color_sampler;
             AllocatedTexture metal_rough_image;
             VkSampler metal_rough_sampler;
+            AllocatedTexture normal_image;
+            VkSampler normal_sampler;
+            AllocatedTexture irradiance_image;
+            VkSampler irradiance_sampler;
+            AllocatedTexture environment_image;
+            VkSampler environment_sampler;
+            AllocatedTexture lut_image;
+            VkSampler lut_sampler;
             VkBuffer data_buffer;
             uint32_t data_buffer_offset;
         };
@@ -123,10 +131,10 @@ namespace Vulkan {
         struct LoadedGLTF : public IRenderable {
 
             // storage for all the data on a given glTF file
-            std::unordered_map<std::string, std::shared_ptr<MeshAsset>> meshes;
-            std::unordered_map<std::string, std::shared_ptr<Node>> nodes;
-            std::unordered_map<std::string, AllocatedTexture> textures;
-            std::unordered_map<std::string, std::shared_ptr<MaterialInstance>> materials;
+            std::vector<std::shared_ptr<MeshAsset>> meshes;
+            std::vector<std::shared_ptr<Node>> nodes;
+            std::vector<AllocatedTexture> textures;
+            std::vector<std::shared_ptr<MaterialInstance>> materials;
 
             // nodes that dont have a parent, for iterating through the file in tree order
             std::vector<std::shared_ptr<Node>> top_nodes{};

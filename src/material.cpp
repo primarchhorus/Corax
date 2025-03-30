@@ -22,6 +22,9 @@ namespace Vulkan {
             Descriptors::addLayoutBinding(
                 gltf_material.material_layout, 2,
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+            Descriptors::addLayoutBinding(
+                    gltf_material.material_layout, 3,
+                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
             Descriptors::buildLayout(gltf_material.material_layout, device);
 
             Pipeline::Shader mesh_vertex{};
@@ -62,7 +65,7 @@ namespace Vulkan {
                 swap_chain.image_format;
             gltf_material.opaque_pipeline_config.extent = swap_chain.extent;
             gltf_material.opaque_pipeline_config.descriptor_set_layout = layouts;
-            gltf_material.opaque_pipeline_config.num_descriptor_sets = 2;
+            gltf_material.opaque_pipeline_config.num_descriptor_sets = 3;
             gltf_material.opaque_pipeline_config.enable_blend = VK_FALSE;
             gltf_material.opaque_pipeline_config.enable_depth = VK_TRUE;
 
@@ -82,7 +85,7 @@ namespace Vulkan {
             gltf_material.transparent_pipeline_config.extent =
                 swap_chain.extent;
             gltf_material.transparent_pipeline_config.descriptor_set_layout = layouts;
-            gltf_material.transparent_pipeline_config.num_descriptor_sets = 2;
+            gltf_material.transparent_pipeline_config.num_descriptor_sets = 3;
             gltf_material.transparent_pipeline_config.enable_blend = VK_TRUE;
             gltf_material.transparent_pipeline_config.enable_depth = VK_TRUE;
 
@@ -134,6 +137,11 @@ namespace Vulkan {
             Descriptors::writeImage(material_operator.writer, 2,
                                     resources.metal_rough_image.view,
                                     resources.metal_rough_sampler,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            Descriptors::writeImage(material_operator.writer, 3,
+                                    resources.normal_image.view,
+                                    resources.normal_sampler,
                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             assert(resources.color_image.view != VK_NULL_HANDLE);

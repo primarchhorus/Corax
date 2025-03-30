@@ -1,5 +1,6 @@
 #include "pipeline.h"
 #include "vulkan_utils.h"
+#include <array>
 
 namespace Vulkan {
 
@@ -17,8 +18,10 @@ namespace Vulkan {
             */
             std::unique_ptr<Object> pipeline = std::make_unique<Object>();
             pipeline->vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-            pipeline->vertex_input_info.vertexBindingDescriptionCount = 0;
+            pipeline->vertex_input_info.vertexBindingDescriptionCount = 0; // No vertex buffers
+            pipeline->vertex_input_info.pVertexBindingDescriptions = nullptr;
             pipeline->vertex_input_info.vertexAttributeDescriptionCount = 0;
+            pipeline->vertex_input_info.pVertexAttributeDescriptions = nullptr;
 
             pipeline->input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
             pipeline->input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -28,6 +31,23 @@ namespace Vulkan {
                 VK_DYNAMIC_STATE_VIEWPORT,
                 VK_DYNAMIC_STATE_SCISSOR
             };
+
+            // std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = {{
+            //     {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)}, // Position
+            //     {1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},   // Normal
+            //     {2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv_x)},        // UV
+            //     {3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}    // Tangent
+            // }};
+            
+            // std::array<VkVertexInputBindingDescription, 1> bindingDescriptions = {{
+            //     {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+            // }};
+            
+            // pipeline->vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            // pipeline->vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+            // pipeline->vertex_input_info.pVertexBindingDescriptions = bindingDescriptions.data();
+            // pipeline->vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+            // pipeline->vertex_input_info.pVertexAttributeDescriptions = attributeDescriptions.data();
 
             pipeline->dynamic_states_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
             pipeline->dynamic_states_info.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
@@ -111,6 +131,7 @@ namespace Vulkan {
             pipeline->depth_stencil_info.minDepthBounds = 0.f;
             pipeline->depth_stencil_info.maxDepthBounds = 1.f;
 
+            
             pipeline->pipeline_info.pVertexInputState = &pipeline->vertex_input_info;
             pipeline->pipeline_info.pInputAssemblyState = &pipeline->input_assembly;
             pipeline->pipeline_info.pViewportState = &pipeline->viewport_state;
@@ -125,6 +146,7 @@ namespace Vulkan {
             pipeline->pipeline_info.subpass = 0;
             pipeline->pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
             pipeline->pipeline_info.basePipelineIndex = -1;
+
 
             vkCheck(vkCreateGraphicsPipelines(device.logical_handle, VK_NULL_HANDLE, 1, &pipeline->pipeline_info, nullptr, &pipeline->handle)); 
 

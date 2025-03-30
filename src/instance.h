@@ -23,4 +23,8 @@ namespace Vulkan {
     VkDebugUtilsMessengerEXT debug_messenger;
     VkSurfaceKHR surface;
   };
+
+  void createInstance(Instance& instance);
+  void destroyInstance(Instance& instance);
+  void createSurface(const Window& window, Instance& instance);
 } // namespace Vulkan

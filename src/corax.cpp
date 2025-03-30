@@ -40,40 +40,6 @@ namespace Vulkan {
                                       (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
         Descriptors::buildLayout(scene_layout, device, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        mesh_vertex.filename =
-            "C:/Users/bgarner/Documents/repos/Corax/build/shaders/"
-            "shader.vert.spv";
-        Pipeline::loadShader(mesh_vertex);
-        Pipeline::createShaderModule(device, mesh_vertex);
-        mesh_fragment.filename =
-            "C:/Users/bgarner/Documents/repos/Corax/build/shaders/"
-            "shader.frag.spv";
-        Pipeline::loadShader(mesh_fragment);
-        Pipeline::createShaderModule(device, mesh_fragment);
-
-        basic_mesh_pipeline_config.name = "triangle_pipeline";
-        VkPipelineShaderStageCreateInfo vertex_info{};
-        vertex_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertex_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertex_info.module = mesh_vertex.module;
-        vertex_info.pName = "main";
-        basic_mesh_pipeline_config.vertex_stages = vertex_info;
-
-        VkPipelineShaderStageCreateInfo frag_info{};
-        frag_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        frag_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        frag_info.module = mesh_fragment.module;
-        frag_info.pName = "main";
-        basic_mesh_pipeline_config.fragment_stages = frag_info;
-        basic_mesh_pipeline_config.format = swap_chain.image_format;
-        basic_mesh_pipeline_config.extent = swap_chain.extent;
-
-        VkDescriptorSetLayout layouts[] = {global_layout.layout_handle};
-        basic_mesh_pipeline_config.descriptor_set_layout = layouts;
-        basic_mesh_pipeline_config.num_descriptor_sets = 1;
-
-        auto mesh_pipeline = Pipeline::createPipelineObject(device, basic_mesh_pipeline_config);
-        Pipeline::addPipelineToCache(basic_mesh_pipeline_config, pipeline_cache, std::move(mesh_pipeline));
 
         MaterialOperation::buildPipelines(device, swap_chain, material_operations, pipeline_cache, scene_layout);
 
@@ -82,23 +48,23 @@ namespace Vulkan {
         sampl.magFilter = VK_FILTER_NEAREST;
         sampl.minFilter = VK_FILTER_NEAREST;
 
-        vkCreateSampler(device.logical_handle, &sampl, nullptr, &_defaultSamplerNearest);
+        vkCreateSampler(device.logical_handle, &sampl, nullptr, &default_sampler_nearest);
 
         sampl.magFilter = VK_FILTER_LINEAR;
         sampl.minFilter = VK_FILTER_LINEAR;
-        vkCreateSampler(device.logical_handle, &sampl, nullptr, &_defaultSamplerLinear);
+        vkCreateSampler(device.logical_handle, &sampl, nullptr, &default_linear_sampler);
 
 
         uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
-        _whiteImage = Texture::upload(device, allocator, transfer_pool, (void*)&white, VkExtent3D{1, 1, 1},
+        default_white_image = Texture::upload(device, allocator, transfer_pool, (void*)&white, VkExtent3D{1, 1, 1},
                                       VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
         uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
-        _greyImage = Texture::upload(device, allocator, transfer_pool, (void*)&grey, VkExtent3D{1, 1, 1},
+        default_grey_image = Texture::upload(device, allocator, transfer_pool, (void*)&grey, VkExtent3D{1, 1, 1},
                                      VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
         uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-        _blackImage = Texture::upload(device, allocator, transfer_pool, (void*)&black, VkExtent3D{1, 1, 1},
+        default_black_image = Texture::upload(device, allocator, transfer_pool, (void*)&black, VkExtent3D{1, 1, 1},
                                       VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
         uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
@@ -108,19 +74,19 @@ namespace Vulkan {
                 pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : white;
             }
         }
-        _errorCheckerboardImage =
+        error_checkerboard_image =
             Texture::upload(device, allocator, transfer_pool, pixels.data(), VkExtent3D{16, 16, 1},
                             VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
 
         MaterialOperation::MaterialResources material_resources;
-        material_resources.color_image = _whiteImage;
-        material_resources.color_sampler = _defaultSamplerLinear;
-        material_resources.metal_rough_image = _whiteImage;
-        material_resources.metal_rough_sampler = _defaultSamplerLinear;
+        material_resources.color_image = default_white_image;
+        material_resources.color_sampler = default_linear_sampler;
+        material_resources.metal_rough_image = default_white_image;
+        material_resources.metal_rough_sampler = default_linear_sampler;
 
         auto scene_resources = ResourceManagement::loadGLTF(
-            device, "C:/Users/bgarner/Documents/repos/Corax/assets/DamagedHelmet.glb", allocator, transfer_pool,
-            _errorCheckerboardImage, material_resources, material_operations, pipeline_cache);
+            device, "C:/Users/bgarner/Documents/repos/Corax/third-party/glTF-Sample-Assets/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", allocator, transfer_pool,
+            error_checkerboard_image, material_resources, material_operations, pipeline_cache);
         loaded_scenes["structure"] = scene_resources.value();
 
         AllocatedBuffer materialConstants =
@@ -164,32 +130,24 @@ namespace Vulkan {
         scene_data.projection[1][1] *= -1;
         scene_data.view_projection = scene_data.projection * scene_data.view;
 
-        scene_data.sunlight_color = glm::vec4(0.1f, 0.1f, 0.1f, 0.5f); // Lower intensity
+        scene_data.sunlight_color = glm::vec4(2.0f, 2.0f, 2.0f, 2.0f);
         scene_data.sunlight_direction = glm::vec4(0, 1, 0, 1.0f);
-        scene_data.ambient_color = glm::vec4(0.1f, 0.1f, 0.1f, 0.5f); // Slightly brighter ambient
-
-        // scene_data.ambient_color = glm::vec4(0.3f, 0.3f, 0.3f, 1.0f); // Increase ambient intensity
-        // scene_data.sunlight_color = glm::vec4(1.5f, 1.5f, 1.5f, 1.0f); // Slightly stronger light
-        // scene_data.sunlight_direction = glm::vec4(0, 1, 0, 1.0f);
+        scene_data.ambient_color = glm::vec4(5.0f, 5.0f, 5.0f, 5.0f);
         scene_data.camera_position = glm::vec4(Camera::getPosition(fps_camera));
         scene_data.light_position = glm::vec4(1.0f, 1.0f, 5.0f, 10.0f);
-    }
-
-    void CoraxRenderer::createPipelineObjects() {
-        // pipeline_builder.buildPipeLines(device, swap_chain);
     }
 
     void CoraxRenderer::updateRenderingInfo() {
 
         assert(depth_image.imageView != VK_NULL_HANDLE);
 
-        depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        depthAttachment.pNext = nullptr;
-        depthAttachment.imageView = depth_image.imageView;
-        depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depthAttachment.clearValue.depthStencil.depth = 1.0f;
+        depth_attachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        depth_attachment.pNext = nullptr;
+        depth_attachment.imageView = depth_image.imageView;
+        depth_attachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        depth_attachment.clearValue.depthStencil.depth = 1.0f;
 
         color_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         color_attachment_info.pNext = nullptr;
@@ -208,7 +166,7 @@ namespace Vulkan {
         render_info.layerCount = 1;
         render_info.colorAttachmentCount = 1;
         render_info.pColorAttachments = &color_attachment_info;
-        render_info.pDepthAttachment = &depthAttachment;
+        render_info.pDepthAttachment = &depth_attachment;
     }
 
     void CoraxRenderer::beginFrame(float delta_time) {
@@ -395,18 +353,19 @@ namespace Vulkan {
 
         // In this experiment i am finding manual destruction a pain, however i dont want to use OOP, so
         // The destruction queue is one way, another i am considering is using a function callback set to run on destruction.
-        main_deletion_queue.flush();
+        
 
         vkDeviceWaitIdle(device.logical_handle);
+        main_deletion_queue.flush();
         for (auto& n : loaded_scenes) {
             n.second->onDestroy();
         }
-        vkDestroySampler(device.logical_handle, _defaultSamplerNearest, nullptr);
-        vkDestroySampler(device.logical_handle, _defaultSamplerLinear, nullptr);
-        Texture::destroy(device, allocator, _whiteImage);
-        Texture::destroy(device, allocator, _greyImage);
-        Texture::destroy(device, allocator, _blackImage);
-        Texture::destroy(device, allocator, _errorCheckerboardImage);
+        vkDestroySampler(device.logical_handle, default_sampler_nearest, nullptr);
+        vkDestroySampler(device.logical_handle, default_linear_sampler, nullptr);
+        Texture::destroy(device, allocator, default_white_image);
+        Texture::destroy(device, allocator, default_grey_image);
+        Texture::destroy(device, allocator, default_black_image);
+        Texture::destroy(device, allocator, error_checkerboard_image);
         Descriptors::destroyLayout(device, global_layout);
         Descriptors::clearLayoutBindings(global_layout);
         Descriptors::destroyLayout(device, scene_layout);
@@ -419,10 +378,9 @@ namespace Vulkan {
         frame_sync.destroy(device);
         vkDestroyImage(device.logical_handle, depth_image.image, nullptr);
         vkDestroyImageView(device.logical_handle, depth_image.imageView, nullptr);
-        vkFreeMemory(device.logical_handle, depth_image.memory, nullptr);
         CommandPool::destroyPool(device, transfer_pool);
-        MemoryAllocator::destroyAllocator(allocator);
         swap_chain.destroy(device);
+        MemoryAllocator::destroyAllocator(allocator);
         device.destroy();
         glfw_window.destroy();
         instance.destroy();

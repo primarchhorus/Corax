@@ -47,5 +47,8 @@ namespace Vulkan
             std::optional<AllocatedTexture> loadImage(Device& device, VmaAllocator& allocator_handle, VkCommandPool& pool_handle, fastgltf::Asset& asset, fastgltf::Image& image);
         VkFilter extractFilter(fastgltf::Filter filter);
         VkSamplerMipmapMode extractMipmapMode(fastgltf::Filter filter);
+        VkSampler createIBLSampler(VkDevice device);
+        AllocatedTexture loadKTXTexture(const Device& device, VkCommandPool& pool_handle, const std::string& filename);
+        AllocatedTexture loadBRDFLUT(const Device& device, VmaAllocator allocator_handle, VkCommandPool& pool_handle, const std::string& filename);
     }
 }

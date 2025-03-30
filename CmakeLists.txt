@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(VulkanTutorial)
 
-
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -21,11 +19,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_CXX_COMPILER "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MD")
 endif()
-
-#if(MSVC)
-#    add_compile_options(/W4 /WX)
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /VERBOSE")
-#endif()
 
 # Add executable
 add_executable(${PROJECT_NAME}
@@ -47,8 +40,17 @@ add_executable(${PROJECT_NAME}
     src/corax.cpp
 )
 
+# --- ADD THIRD-PARTY LIBRARIES ---
+
 # Add fastgltf
 add_subdirectory(third-party/fastgltf)
+
+# Add KTX-Software (libktx)
+set(KTX_FEATURE_STATIC ON CACHE BOOL "" FORCE) # Build static libktx
+set(KTX_FEATURE_TOOLS OFF CACHE BOOL "" FORCE) # Disable tools (only library needed)
+set(KTX_FEATURE_TESTS OFF CACHE BOOL "" FORCE) # Disable tests
+
+add_subdirectory(third-party/KTX-Software)
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -57,16 +59,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${GLFW_SDK}/include
     ${CMAKE_SOURCE_DIR}/third-party/fastgltf/include
     ${CMAKE_SOURCE_DIR}/third-party/stb
+    ${CMAKE_SOURCE_DIR}/third-party/KTX-Software/include
 )
 
+# Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${VULKAN_SDK}/Lib/vulkan-1.lib
     ${GLFW_SDK}/lib-vc2022/glfw3.lib
     fastgltf::fastgltf
+    ktx
 )
 
+# --- SHADER COMPILATION FUNCTION ---
 function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
-    # Find glslangValidator
     find_program(GLSLANG_VALIDATOR glslangValidator
         HINTS $ENV{VULKAN_SDK}/bin)
 
@@ -77,37 +82,28 @@ function(compile_shaders SHADER_SOURCE_DIR SHADER_BINARY_DIR)
     message(STATUS "Shader source dir: ${SHADER_SOURCE_DIR}")
     message(STATUS "Shader binary dir: ${SHADER_BINARY_DIR}")
     
-    # Get all shader files
     file(GLOB SHADER_SOURCES
         ${SHADER_SOURCE_DIR}/*.vert
         ${SHADER_SOURCE_DIR}/*.frag
         ${SHADER_SOURCE_DIR}/*.comp
     )
 
-    # Create output directory
     file(MAKE_DIRECTORY ${SHADER_BINARY_DIR})
 
-    message(STATUS "Found shaders: ${SHADER_SOURCES}")
-    # ...existing code...
-    # Compile each shader
     foreach(SHADER ${SHADER_SOURCES})
         get_filename_component(SHADER_NAME ${SHADER} NAME)
         set(SPIRV_OUTPUT "${SHADER_BINARY_DIR}/${SHADER_NAME}.spv")
-        message(STATUS "File shader: ${SHADER_NAME}")
-        message(STATUS "SPIRV shader: ${SPIRV_OUTPUT}")
-        message("${GLSLANG_VALIDATOR}")
-        # Add custom command to compile the shader
+        message(STATUS "Compiling shader: ${SPIRV_OUTPUT}")
+
         add_custom_command(
             OUTPUT ${SPIRV_OUTPUT}
             COMMAND ${GLSLANG_VALIDATOR} -V ${SHADER} -o ${SPIRV_OUTPUT}
             DEPENDS ${SHADER}
-            message(STATUS "Compiling shader: ${SPIRV_OUTPUT}")
         )
 
         list(APPEND SPIRV_BINARY_FILES ${SPIRV_OUTPUT})
     endforeach()
 
-    # Create a custom target that depends on all compiled shaders
     add_custom_target(shaders ALL DEPENDS ${SPIRV_BINARY_FILES})
 endfunction()
 
